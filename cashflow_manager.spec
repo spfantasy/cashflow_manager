@@ -48,7 +48,10 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    # 不使用 UPX：GitHub Actions 的 Windows runner 自带 upx.exe，
+    # 压缩后的 python3xx.dll / onefile 在部分 Windows 上会出现启动即崩，
+    # 而不压缩只多几 MB，稳定性优先。
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,

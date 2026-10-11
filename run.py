@@ -13,7 +13,25 @@ import argparse
 import os
 import sys
 import threading
+import traceback
 import webbrowser
+
+
+def configure_output() -> None:
+    """让中文输出永远不会把程序打挂。
+
+    Windows 控制台默认不是 UTF-8（英文系统是 cp1252），此时直接 print 中文会抛
+    UnicodeEncodeError 并让进程以非 0 退出——打包成 exe 后就是「双击没反应」。
+    这里保留控制台自身的编码（中文 Windows 控制台显示中文仍然正常），
+    只把编码错误降级为替换字符；配合 PYTHONIOENCODING=utf-8 也可输出完整日志。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        if stream is None:
+            continue
+        try:
+            stream.reconfigure(errors="replace")
+        except Exception:  # 某些环境下没有 reconfigure（如被重定向为其它对象）
+            pass
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,9 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv=None) -> int:
-    args = build_parser().parse_args(argv)
-
+def run(args) -> int:
     from cashflow import create_app
     from cashflow.config import Config
 
@@ -50,6 +66,17 @@ def main(argv=None) -> int:
 
     app.run(host=args.host, port=args.port, debug=args.debug, use_reloader=args.debug)
     return 0
+
+
+def main(argv=None) -> int:
+    configure_output()
+    try:
+        return run(build_parser().parse_args(argv))
+    except KeyboardInterrupt:
+        return 0
+    except Exception:
+        traceback.print_exc()
+        return 1
 
 
 if __name__ == "__main__":

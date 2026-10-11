@@ -47,10 +47,18 @@ jobs:
         run: pyinstaller --noconfirm --clean cashflow_manager.spec
 
       - name: 冒烟测试（--init-db）
+        env:
+          PYTHONIOENCODING: utf-8
+        shell: pwsh
         run: |
-          dist\CashflowManager.exe --init-db
+          $ErrorActionPreference = "Continue"
+          & .\dist\CashflowManager.exe --init-db
+          $code = $LASTEXITCODE
+          Write-Host "exit code = $code"
+          if ($code -ne 0) { throw "CashflowManager.exe --init-db 退出码 $code" }
 
       - name: 上传产物
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: CashflowManager-windows
