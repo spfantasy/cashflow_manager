@@ -1,0 +1,19 @@
+description/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# runtime data (sqlite db + uploaded temp files)
+data/
+instance/
+uploads/
+
+# packaging
+build/
+dist/
+*.spec.bak

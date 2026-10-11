@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}详情{% endblock %}
+
+{% block content %}
+<h2>页面2 · 详情</h2>
+
+<div class="card">
+  <form class="filters" method="get" action="{{ url_for('details.index') }}">
+    <div class="field">
+      <label for="item_id">物品编号</label>
+      <input type="text" id="item_id" name="item_id" value="{{ filters.item_id }}" placeholder="如 168058590540">
+    </div>
+    <div class="field">
+      <label for="order_id">订单编号</label>
+      <input type="text" id="order_id" name="order_id" value="{{ filters.order_id }}" placeholder="如 27-14089-26755">
+    </div>
+    <button class="btn" type="submit">查询</button>
+    <a class="btn secondary" href="{{ url_for('details.index') }}">重置</a>
+    <a class="btn secondary" href="{{ url_for('details.export', **filters) }}">导出 Excel</a>
+  </form>
+  <div class="note" style="margin-top:10px">物品编号与订单编号是「或」关系：任意一个匹配即会列出。</div>
+</div>
+
+<div class="card">
+  <div class="summary">
+    <div>
+      <div class="label">金额合计</div>
+      <div class="amount {{ 'negative' if total < 0 else '' }}">{{ total | money2 }}</div>
+    </div>
+    <div class="count">共 {{ rows | length }} 笔现金流</div>
+  </div>
+</div>
+
+<form method="post" action="{{ url_for('details.delete', **filters) }}" id="delete-form"
+      data-confirm="确认删除选中的现金流吗？该操作不可撤销。">
+  <div class="toolbar">
+    <button type="button" class="btn secondary small" onclick="toggleAll(this)">全选 / 全不选</button>
+    <button type="submit" class="btn danger" id="delete-button" disabled>删除选中行</button>
+    <span class="spacer"></span>
+    <span class="muted" id="selected-count">已选 0 行</span>
+  </div>
+
+  <div class="table-wrap">
+    {% if rows %}
+    <table>
+      <thead>
+        <tr>
+          <th class="checkbox-cell"></th>
+          <th>现金流ID</th><th>物品编号</th><th>订单编号</th><th>物品标题</th>
+          <th>用户</th><th>来源</th><th>类型</th>
+          <th class="num">金额</th><th>日期</th><th>备注</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="checkbox-cell">
+            <input type="checkbox" name="cashflow_id" value="{{ row.cashflow_id }}" class="row-check">
+          </td>
+          <td>{{ row.cashflow_id }}</td>
+          <td>{{ row.item_id }}</td>
+          <td>{{ row.order_id or '' }}</td>
+          <td class="wrap">{{ row.item_name or '' }}</td>
+          <td>{{ row.seller_name or '' }}</td>
+          <td>{{ row.cashflow_source }}</td>
+          <td>{{ row.cashflow_type }}</td>
+          <td class="num {{ 'negative' if row.amount.startswith('-') else '' }}">{{ row.amount | money2 }}</td>
+          <td>{{ row.cashflow_date | datefmt }}</td>
+          <td class="wrap muted">{{ row.reminder or '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">没有符合条件的现金流</div>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

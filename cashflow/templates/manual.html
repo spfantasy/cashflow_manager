@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}手工帐{% endblock %}
+
+{% block content %}
+<h2>页面5 · 手工帐</h2>
+
+<div class="card">
+  <form class="filters" method="post" action="{{ url_for('manual.index') }}">
+    <div class="field">
+      <label for="item_id">物品编号 / 账户</label>
+      <input type="text" id="item_id" name="item_id" value="{{ form.item_id }}"
+             placeholder="如 168063599242 或 ebay账户-张三" required>
+    </div>
+    <div class="field">
+      <label for="amount">金额（正数=收入，负数=支出）</label>
+      <input type="text" id="amount" name="amount" value="{{ form.amount }}" placeholder="如 -21.95" required>
+    </div>
+    <div class="field">
+      <label for="cashflow_date">日期</label>
+      <input type="date" id="cashflow_date" name="cashflow_date" value="{{ form.cashflow_date }}" required>
+    </div>
+    <div class="field">
+      <label for="reminder">备注</label>
+      <input type="text" id="reminder" name="reminder" value="{{ form.reminder }}" placeholder="选填">
+    </div>
+    <button class="btn" type="submit">创建现金流</button>
+  </form>
+  <div class="note" style="margin-top:10px">
+    cashflow_source 与 cashflow_type 固定为「手工帐」；cashflow_id = 物品编号 + 毫秒级时间戳
+    （形如 <code>168063599242-20260117_143022123</code>）。
+  </div>
+</div>
+
+{% if created %}
+<div class="card">
+  <h3>创建成功</h3>
+  <div>现金流编号：<code>{{ created }}</code></div>
+</div>
+{% endif %}
+
+{% if form.item_id %}
+<div class="card">
+  <h3>该物品/账户已有现金流（共 {{ recent | length }} 笔，合计 {{ recent_total | money2 }}）</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>现金流ID</th><th>订单编号</th><th>来源</th><th>类型</th><th class="num">金额</th><th>日期</th><th>备注</th></tr></thead>
+      <tbody>
+        {% for row in recent %}
+        <tr>
+          <td>{{ row.cashflow_id }}</td>
+          <td>{{ row.order_id or '' }}</td>
+          <td>{{ row.cashflow_source }}</td>
+          <td>{{ row.cashflow_type }}</td>
+          <td class="num {{ 'negative' if row.amount.startswith('-') else '' }}">{{ row.amount | money2 }}</td>
+          <td>{{ row.cashflow_date | datefmt }}</td>
+          <td class="wrap muted">{{ row.reminder or '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

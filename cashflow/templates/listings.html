@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}刊登调整{% endblock %}
+
+{% block content %}
+<h2>页面4 · 刊登调整</h2>
+
+<div class="card">
+  <form class="inline-form" method="post" action="{{ url_for('listings.index') }}">
+    <div class="field">
+      <label for="item_id">物品编号</label>
+      <input type="text" id="item_id" name="item_id" value="{{ item_id }}" placeholder="如 168058590540" required>
+    </div>
+    <div class="field">
+      <label for="seller_name">用户名</label>
+      <input type="text" id="seller_name" name="seller_name" list="seller-options"
+             value="{{ item.seller_name if item else '' }}" placeholder="选择或输入用户名" required>
+      <datalist id="seller-options">
+        {% for name in sellers %}<option value="{{ name }}"></option>{% endfor %}
+      </datalist>
+    </div>
+    <button class="btn" type="submit">保存调整</button>
+  </form>
+  <div class="note" style="margin-top:10px">
+    调整后该物品的 seller_name 会被标记为人工修改，在「页面6 配置」执行「重新匹配」时不会被覆盖。
+  </div>
+</div>
+
+{% if item_id %}
+<div class="card">
+  <h3>物品信息</h3>
+  {% if item %}
+  <div class="table-wrap" style="max-height:none">
+    <table>
+      <tbody>
+        <tr><th>物品编号</th><td>{{ item.item_id }}</td><th>订单编号</th><td>{{ item.order_id or '' }}</td></tr>
+        <tr><th>物品标题</th><td class="wrap" colspan="3">{{ item.item_name or '' }}</td></tr>
+        <tr><th>当前用户</th><td>{{ item.seller_name }}</td><th>是否人工调整</th><td>{{ '是' if item.seller_manual else '否' }}</td></tr>
+        <tr><th>买家</th><td>{{ item.buyer_username or '' }}</td><th>买家国家</th><td>{{ item.buyer_country or '' }}</td></tr>
+        <tr><th>追踪号码</th><td>{{ item.track_id or '' }}</td><th>lot</th><td>{{ item.lot }}</td></tr>
+        <tr><th>成交价</th><td>{{ item.item_price | money2 }}</td><th>分摊运费 X</th><td>{{ item.allocated_shipping | money2 }}</td></tr>
+        <tr><th>付款日期</th><td>{{ item.payment_date | datefmt }}</td><th>运费分配说明</th><td class="wrap">{{ item.shipping_reminder or '' }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">没有找到物品 {{ item_id }}</div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

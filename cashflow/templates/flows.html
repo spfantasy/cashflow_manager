@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}流水{% endblock %}
+
+{% block content %}
+<h2>页面1 · 流水</h2>
+
+<div class="card">
+  <form class="filters" method="get" action="{{ url_for('flows.index') }}">
+    <div class="field">
+      <label for="start">开始日期</label>
+      <input type="date" id="start" name="start" value="{{ filters.start }}">
+    </div>
+    <div class="field">
+      <label for="end">结束日期</label>
+      <input type="date" id="end" name="end" value="{{ filters.end }}">
+    </div>
+    <div class="field">
+      <label for="seller">用户</label>
+      <select id="seller" name="seller">
+        <option value="">全部</option>
+        {% for name in sellers %}
+          <option value="{{ name }}" {{ 'selected' if filters.seller == name else '' }}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn" type="submit">查询</button>
+    <a class="btn secondary" href="{{ url_for('flows.index') }}">重置</a>
+    <a class="btn secondary" href="{{ url_for('flows.export', **filters) }}">导出 Excel</a>
+  </form>
+</div>
+
+<div class="card">
+  <div class="summary">
+    <div>
+      <div class="label">金额合计{% if filters.seller %}（用户：{{ filters.seller }}）{% endif %}</div>
+      <div class="amount {{ 'negative' if total < 0 else '' }}">{{ total | money2 }}</div>
+    </div>
+    <div class="count">共 {{ rows | length }} 笔现金流</div>
+  </div>
+  <div class="note">用户筛选同时匹配两类数据：item 的 seller_name，以及账户级现金流的 item_id（<code>ebay账户-用户名</code>）。</div>
+</div>
+
+<div class="table-wrap">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>现金流ID</th><th>物品编号</th><th>订单编号</th><th>物品标题</th>
+        <th>用户</th><th>买家</th><th>来源</th><th>类型</th>
+        <th class="num">金额</th><th>日期</th><th>备注</th><th>追踪号码</th><th>lot</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.cashflow_id }}</td>
+        <td>{{ row.item_id }}</td>
+        <td>{{ row.order_id or '' }}</td>
+        <td class="wrap">{{ row.item_name or '' }}</td>
+        <td>{{ row.seller_name or '' }}</td>
+        <td>{{ row.buyer_username or '' }}</td>
+        <td>{{ row.cashflow_source }}</td>
+        <td>{{ row.cashflow_type }}</td>
+        <td class="num {{ 'negative' if row.amount.startswith('-') else '' }}">{{ row.amount | money2 }}</td>
+        <td>{{ row.cashflow_date | datefmt }}</td>
+        <td class="wrap muted">{{ row.reminder or '' }}</td>
+        <td class="muted">{{ row.track_id or '' }}</td>
+        <td class="num">{{ row.lot if row.lot is not none else '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">没有符合条件的现金流</div>
+  {% endif %}
+</div>
+{% endblock %}

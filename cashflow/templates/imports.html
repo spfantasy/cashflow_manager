@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}导入数据{% endblock %}
+
+{% block content %}
+<h2>页面3 · 导入数据</h2>
+
+{% if errors %}
+<div class="flashes">
+  {% for error in errors %}<div class="flash flash-error">{{ error }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('imports.index') }}" enctype="multipart/form-data" id="import-form">
+  <div class="card">
+    <div class="dropzones">
+      {% for kind, field in field_map.items() %}
+      <div class="dropzone" data-input="{{ field }}">
+        <div class="title">{{ kind_labels[kind] }}</div>
+        <div class="hint">把文件拖到这里，或点击选择（支持一次多个 csv / xlsx）</div>
+        <input type="file" name="{{ field }}" id="{{ field }}" multiple hidden
+               accept=".csv,.xlsx,.xlsm">
+        <div class="filelist" id="{{ field }}-list"></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="toolbar">
+    <button class="btn" type="submit">开始导入</button>
+    <span class="muted">按上面三类分别入库：订单表 → ebay_item 及成交价/运费；交易报告 → 税费/刊登费/发款费/退款；税费账单 → 会员费。</span>
+  </div>
+</form>
+
+{% for result in results %}
+<div class="card result-card">
+  <h3>{{ kind_labels[result.file_kind] }}：{{ result.file_name or '(已合并多个文件)' }}</h3>
+  <div class="result-grid">
+    <div><span class="stat-value">{{ result.inserted_items }}</span><span class="stat-label">新增物品</span></div>
+    <div><span class="stat-value">{{ result.skipped_items }}</span><span class="stat-label">跳过已存在物品</span></div>
+    <div><span class="stat-value">{{ result.inserted_cashflows }}</span><span class="stat-label">新增现金流</span></div>
+    <div><span class="stat-value">{{ result.skipped_cashflows }}</span><span class="stat-label">跳过已存在现金流</span></div>
+    <div><span class="stat-value {{ 'muted' if not result.failed else '' }}">{{ result.failed }}</span><span class="stat-label">需人工处理</span></div>
+  </div>
+  {% if result.notes %}
+  <details>
+    <summary class="muted">查看跳过的明细（{{ result.notes | length }} 条）</summary>
+    <ul class="issue-list note">
+      {% for note in result.notes %}<li>{{ note }}</li>{% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>
+{% endfor %}
+
+{% if issues %}
+<div class="card">
+  <h3>需要人工处理的记录（{{ issues | length }} 条）</h3>
+  <div class="note">这些记录没有入库，请确认后在「页面5 手工帐」中补录。</div>
+  <ul class="issue-list">
+    {% for issue in issues %}
+      <li><strong>{{ issue.reason }}</strong>{% if issue.reference %}（{{ issue.reference }}）{% endif %}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>最近导入记录</h3>
+  {% if logs %}
+  <div class="table-wrap" style="max-height:none">
+    <table>
+      <thead><tr><th>时间</th><th>文件</th><th>类型</th><th class="num">写入</th><th class="num">跳过</th><th class="num">失败</th></tr></thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>{{ log.created_at }}</td>
+          <td>{{ log.file_name }}</td>
+          <td>{{ kind_labels.get(log.file_kind, log.file_kind) }}</td>
+          <td class="num">{{ log.inserted }}</td>
+          <td class="num">{{ log.skipped }}</td>
+          <td class="num">{{ log.failed }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">还没有导入过数据</div>
+  {% endif %}
+</div>
+
+<script id="issues-data" type="application/json">{{ issues | tojson }}</script>
+{% endblock %}

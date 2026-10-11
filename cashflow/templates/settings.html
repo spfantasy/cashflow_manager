@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}配置{% endblock %}
+
+{% block content %}
+<h2>页面6 · 配置</h2>
+
+<div class="card">
+  <h3>新增 / 修改用户</h3>
+  <form class="filters" method="post" action="{{ url_for('settings.save') }}" id="seller-form">
+    <input type="hidden" name="seller_id" id="seller_id" value="">
+    <div class="field">
+      <label for="seller_name">用户名</label>
+      <input type="text" id="seller_name" name="seller_name" required>
+    </div>
+    <div class="field">
+      <label for="match_regex">匹配标题的正则</label>
+      <input type="text" id="match_regex" name="match_regex" placeholder="如 ^.* (TEST_USER)$">
+    </div>
+    <div class="field">
+      <label for="sort_order">匹配顺序（小者优先）</label>
+      <input type="number" id="sort_order" name="sort_order" value="100" min="0" step="1">
+    </div>
+    <div class="field">
+      <label for="share_membership">参与会员费均摊</label>
+      <select id="share_membership" name="share_membership">
+        <option value="0">否</option>
+        <option value="1">是</option>
+      </select>
+    </div>
+    <button class="btn" type="submit">保存</button>
+    <button class="btn secondary" type="button" onclick="resetSellerForm()">清空</button>
+  </form>
+  <div class="note" style="margin-top:10px">
+    匹配规则：按「匹配顺序」依次用正则去 <code>search</code> 物品标题，第一个命中的用户即为该物品的用户；
+    全部不命中则归入 <code>Unknown</code>。正则为空表示不参与匹配。<br>
+    会员费与发款费只在「参与会员费均摊 = 是」的用户之间按人头等分，前 N-1 人四舍五入到 0.01，最后一人取残值。
+  </div>
+</div>
+
+<div class="card">
+  <div class="toolbar">
+    <h3 style="margin:0">用户列表</h3>
+    <span class="spacer"></span>
+    <form method="post" action="{{ url_for('settings.rematch') }}"
+          data-confirm="将按当前配置重新匹配所有物品的用户（人工调整过的物品不会被覆盖），确认继续？">
+      <button class="btn secondary" type="submit">按当前配置重新匹配全部物品</button>
+    </form>
+  </div>
+  <div class="table-wrap" style="max-height:none">
+    <table>
+      <thead>
+        <tr><th>用户名</th><th>匹配正则</th><th>参与会员费均摊</th><th>匹配顺序</th><th>更新时间</th><th>操作</th></tr>
+      </thead>
+      <tbody>
+        {% for seller in sellers %}
+        <tr>
+          <td>{{ seller.seller_name }}{% if seller.seller_name in protected %} <span class="muted">(内置)</span>{% endif %}</td>
+          <td><code>{{ seller.match_regex or '（不匹配）' }}</code></td>
+          <td>{{ '是' if seller.share_membership else '否' }}</td>
+          <td class="num">{{ seller.sort_order }}</td>
+          <td class="muted">{{ seller.updated_at }}</td>
+          <td>
+            <button type="button" class="btn secondary small"
+                    onclick="editSeller({{ seller.id }}, {{ seller.seller_name | tojson }}, {{ seller.match_regex | tojson }}, {{ seller.share_membership }}, {{ seller.sort_order }})">
+              编辑
+            </button>
+            {% if seller.seller_name not in protected %}
+            <form method="post" action="{{ url_for('settings.delete') }}" style="display:inline"
+                  data-confirm="确认删除用户「{{ seller.seller_name }}」的配置？已有的现金流不会被删除。">
+              <input type="hidden" name="seller_id" value="{{ seller.id }}">
+              <button class="btn danger small" type="submit">删除</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
